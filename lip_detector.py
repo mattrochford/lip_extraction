@@ -1,35 +1,40 @@
+#########################################################################################
 
-# Lip detector designed by Matt Rochford using references listed at end of code.
+# Lip Detector Module
+# Matt Rochford
  
-# This file defines the function to be used for lip detection in videos
-# Input is a path to an mp4 file (or other video type supported by cv2.VideoCapture)
-# Output is a 3D data packet of frames of lip data stored as a numpy array
+# This file defines the function to be used for lip detection in videos.
+# Input is a path to an mp4 file (or other video type supported by cv2.VideoCapture).
+# Output is a 3D data packet of frames of lip data stored as a numpy array.
 
+######################################################################################### 
 
 # Import the necessary packages
 from imutils import face_utils
 import numpy as np
-import dlib
 import cv2
+import dlib
+import time
+
+######################################################################################### 
 
 # Define path to dlib predictor
-predictor_path = '/home/matt/thesis/preprocessing/shape_predictor_68_face_landmarks.dat' 
+predictor_path = 'shape_predictor_68_face_landmarks.dat' 
 
-# Lip detection function
+######################################################################################### 
+
+# Lip detection function 
 def lip_detector(video_path):
 
+	# Uncomment this line for use with timing block at bottom of function
+	#t0 = time.time()
+	
 	# Initialize dlib's face detector (HOG-based) and create facial landmark predictor
 	detector = dlib.get_frontal_face_detector()
 	predictor = dlib.shape_predictor(predictor_path)
 
 	# Read video in as mp4 file
 	video = cv2.VideoCapture(video_path)
-
-	# Check frame rate and adjust to 30 fps
-	#fps = video.get(cv2.CAP_PROP_FPS)
-	#video.set(cv2.CAP_PROP_FPS,30) # Not working
-	#fps = video.get(cv2.CAP_PROP_FPS)
-	#print(fps)
 
 	# Check if video opened
 	if (video.isOpened()==False):
@@ -53,10 +58,10 @@ def lip_detector(video_path):
 
 			if len(faces) > 1: # If more than one face detected print error and return
 				print('Error: Multiple faces detected in video')
-				return
+				return 2 # Return error code 2
 			elif len(faces) == 0: # If no face detected print error and return
 				print('Error: No face detected in video')
-				return
+				return 0 # Return error code 0
 
 			else: # If one face detected perform lip cropping
 				for face in faces:
@@ -66,7 +71,7 @@ def lip_detector(video_path):
 					shape = face_utils.shape_to_np(shape)
 
 					# Extract the lip region as a separate image
-					(x, y, w, h) = cv2.boundingRect(np.array([shape[48:68]]))
+					(x, y, w, h) = cv2.boundingRect(np.array([shape[48:68]])) # CHANGE THIS LINE FOR OTHER FACIAL FEATURE DETCTION
 					margin = 10 # Extra pixels to include around lips
 					lips = frame[y-margin:y + h + margin, x-margin:x + w + margin]
 					lips = cv2.resize(lips,(100,60))
@@ -86,22 +91,23 @@ def lip_detector(video_path):
 	# Close any open windows
 	cv2.destroyAllWindows()
 
+	# Reshape array for CNN layer compatibility
+	lip_frames = np.moveaxis(lip_frames,-1,0)
+
+	# Uncomment this block to keep track of processing time per video
+	#t1 = time.time()
+	#total = t1-t0
+	#print('Lip detection time: '+str(total))
+
 	return lip_frames
 
-
-
+######################################################################################### 
 
 # REFERENCES:
 
 # Code for reading and editing video files is adapted from 'Learn OpenCV'
-#https://www.learnopencv.com/read-write-and-display-a-video-using-opencv-cpp-python/
+# https://www.learnopencv.com/read-write-and-display-a-video-using-opencv-cpp-python/
 
 # Code for lip detection is based off Dlib library and an implementation from PyImageSearch
 # https://www.pyimagesearch.com/2017/04/10/detect-eyes-nose-lips-jaw-dlib-opencv-python/
 
-
-
-
-
-
- 
